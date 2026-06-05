@@ -1,0 +1,7 @@
+# Canonical-host enforcement goes here once the production domain + Netlify
+# subdomain are known (see CLAUDE.md Phase 4). Example:
+#
+# https://<netlify-subdomain>/*  https://www.<domain>/:splat  301!
+# http://<netlify-subdomain>/*   https://www.<domain>/:splat  301!
+#
+# The build also maintains an AUTO-GENERATED .html -> /404 block below.

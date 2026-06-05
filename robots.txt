@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap line added once the production domain is set (see CLAUDE.md Phase 7):
+# Sitemap: https://www.<domain>/sitemap_index.xml
