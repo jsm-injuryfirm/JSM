@@ -71,11 +71,6 @@ a{color:inherit;text-decoration:none}
 .card .top{background:var(--gold);color:#1b1404;padding:14px 20px;display:flex;align-items:center;gap:12px;text-align:left}
 .card .top .avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(0,0,0,.18);flex:0 0 52px}
 .teamphoto{display:block;width:100%;max-width:900px;margin:0 auto;border-radius:16px;box-shadow:var(--shadow)}
-/* Desktop: cap the form height so the whole hero stays above the fold; form scrolls internally */
-@media(min-width:921px){
-  .hero .grid{align-items:stretch}
-  #inline-BPhWY3e7fBc2TEUfX8n5{min-height:0 !important;height:clamp(440px, calc(100vh - 205px), 660px) !important}
-}
 .card .top b{font-size:19px;font-weight:900}
 .card .top span{display:block;font-size:13px;font-weight:700;opacity:.85}
 .card form{padding:20px 22px 22px}
@@ -226,7 +221,7 @@ details p{padding:0 20px 18px;color:var(--muted);font-size:15px}
       <div class="top"><img class="avatar" loading="lazy" src="https://jsminjuryfirm.com/wp-content/uploads/2024/06/atty-pic-01.jpg" alt="Attorney Jamal S. Mahmood" width="52" height="52"><div><b>Free Case Review</b><span>Talk to a real attorney — free &amp; confidential.</span></div></div>
       <iframe src="https://api.leadconnectorhq.com/widget/form/BPhWY3e7fBc2TEUfX8n5"
         title="JSM Injury Form" id="inline-BPhWY3e7fBc2TEUfX8n5"
-        style="display:block;width:100%;border:none;border-radius:0 0 18px 18px;min-height:560px"
+        style="display:block;width:100%;border:none;border-radius:0 0 18px 18px;min-height:320px"
         data-layout="{'id':'INLINE'}" data-trigger-type="alwaysShow" data-trigger-value=""
         data-activation-type="alwaysActivated" data-activation-value=""
         data-deactivation-type="neverDeactivate" data-deactivation-value=""
@@ -394,4 +389,11 @@ details p{padding:0 20px 18px;color:var(--muted);font-size:15px}
 
 <script>
 window.dataLayer = window.dataLayer || [];
-// Phone-clic
+// Phone-click conversion event
+document.querySelectorAll('[data-call]').forEach(function(a){
+  a.addEventListener('click', function(){
+    window.dataLayer.push({event:'phone_call_click', value:'(949) 696-6955'});
+  });
+});
+</script>
+<!-- GoHighLevel form embed (handles iframe auto-resiz
