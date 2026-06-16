@@ -91,6 +91,24 @@ a{color:inherit;text-decoration:none}
 .thanks h3{font-size:24px;color:var(--navy);margin-bottom:8px}
 .thanks p{color:var(--muted)}
 .thanks .big{font-size:46px;margin-bottom:8px}
+/* Native form */
+.formbody{background:var(--navy);padding:22px 22px 24px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.formbody input,.formbody textarea{width:100%;border:none;border-radius:8px;padding:14px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff}
+.formbody input::placeholder,.formbody textarea::placeholder{color:#8a93a0}
+.formbody input:focus,.formbody textarea:focus{outline:3px solid rgba(200,162,75,.55)}
+.formbody textarea{min-height:96px;resize:vertical;margin-bottom:14px}
+.flabel{display:block;color:#fff;font-weight:800;font-size:15px;margin:2px 0 8px}
+.consent-head{color:#fff;font-weight:800;font-size:13px;margin:4px 0 10px}
+.consent{display:flex;gap:10px;align-items:flex-start;color:#aeb9c7;font-size:12px;line-height:1.45;margin-bottom:18px}
+.consent input{width:18px;height:18px;flex:0 0 18px;margin-top:1px}
+.submitbtn{width:100%;font-size:18px;padding:16px}
+.formfine{text-align:center;margin-top:14px;font-size:12px}
+.formfine a{color:#9cc0ff;text-decoration:underline}
+.formbody .thanks{padding:36px 12px}
+.formbody .thanks h3{color:#fff}
+.formbody .thanks p{color:#cfd9e6}
+@media(max-width:520px){.frow{grid-template-columns:1fr}}
 
 /* Trust bar */
 .trust{background:var(--soft);border-bottom:1px solid var(--line);padding:18px 0}
@@ -224,14 +242,29 @@ details p{padding:0 20px 18px;color:var(--muted);font-size:15px}
     <!-- FORM -->
     <div class="card" id="top-form">
       <div class="top"><img class="avatar" loading="lazy" src="https://jsminjuryfirm.com/wp-content/uploads/2024/06/atty-pic-01.jpg" alt="Attorney Jamal S. Mahmood" width="52" height="52"><div><b>Free Case Review</b><span>Talk to a real attorney — free &amp; confidential.</span></div></div>
-      <iframe src="https://api.leadconnectorhq.com/widget/form/BPhWY3e7fBc2TEUfX8n5"
-        title="JSM Injury Form" id="inline-BPhWY3e7fBc2TEUfX8n5"
-        style="display:block;width:100%;border:none;border-radius:0 0 18px 18px;min-height:320px"
-        data-layout="{'id':'INLINE'}" data-trigger-type="alwaysShow" data-trigger-value=""
-        data-activation-type="alwaysActivated" data-activation-value=""
-        data-deactivation-type="neverDeactivate" data-deactivation-value=""
-        data-form-name="JSM Injury Form - Injury.jsm subdomain" data-height="986"
-        data-layout-iframe-id="inline-BPhWY3e7fBc2TEUfX8n5" data-form-id="BPhWY3e7fBc2TEUfX8n5"></iframe>
+      <div class="formbody">
+        <form id="leadForm" novalidate>
+          <div class="frow">
+            <input name="first_name" placeholder="First Name" autocomplete="given-name" required>
+            <input name="last_name" placeholder="Last Name" autocomplete="family-name" required>
+          </div>
+          <div class="frow">
+            <input name="phone" type="tel" placeholder="Phone" autocomplete="tel" required>
+            <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+          </div>
+          <label class="flabel" for="msg">Tell Us About Your Case</label>
+          <textarea id="msg" name="message" placeholder="Type your message here"></textarea>
+          <div class="consent-head">I agree to receive SMS updates from JSM Injury Firm.</div>
+          <label class="consent"><input type="checkbox" name="sms_consent" value="yes" required><span>By checking this box, you agree to receive recurring SMS messages from JSM Injury Firm. Message &amp; data rates may apply. Message frequency varies. Reply HELP for help or STOP to cancel.</span></label>
+          <button type="submit" class="btn btn-gold submitbtn">Get My Free Case Review &#8594;</button>
+          <div class="formfine"><a href="https://jsminjuryfirm.com/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a> &middot; <a href="https://jsminjuryfirm.com/terms-and-conditions/" target="_blank" rel="noopener">Terms of Service</a></div>
+        </form>
+        <div class="thanks" id="thanks">
+          <div class="big">&#9989;</div>
+          <h3>Thank you &mdash; we&#8217;ve got it.</h3>
+          <p>An attorney from JSM Injury Firm will reach out shortly. Need help now? <a href="tel:+19496966955" data-call style="color:var(--gold);font-weight:800">Call (949) 696-6955</a>.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -394,14 +427,20 @@ details p{padding:0 20px 18px;color:var(--muted);font-size:15px}
 
 <script>
 window.dataLayer = window.dataLayer || [];
-// Phone-click conversion event
 document.querySelectorAll('[data-call]').forEach(function(a){
-  a.addEventListener('click', function(){
-    window.dataLayer.push({event:'phone_call_click', value:'(949) 696-6955'});
-  });
+  a.addEventListener('click', function(){ window.dataLayer.push({event:'phone_call_click', value:'(949) 696-6955'}); });
+});
+var leadForm = document.getElementById('leadForm');
+if (leadForm) leadForm.addEventListener('submit', function(e){
+  e.preventDefault();
+  var btn = leadForm.querySelector('button[type=submit]');
+  if (btn){ btn.disabled = true; btn.textContent = 'Sending\u2026'; }
+  var data = Object.fromEntries(new FormData(leadForm).entries());
+  data.source = 'injury.jsminjuryfirm.com/personal-injury-lawyer';
+  window.dataLayer.push({event:'generate_lead', form_location:'personal_injury_lp'});
+  function done(){ leadForm.style.display='none'; document.getElementById('thanks').classList.add('show'); }
+  fetch('/.netlify/functions/lead', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)}).then(done).catch(done);
 });
 </script>
-<!-- GoHighLevel form embed (handles iframe auto-resize) -->
-<script src="https://link.msgsndr.com/js/form_embed.js"></script>
 </body>
 </html>
