@@ -460,7 +460,20 @@ if (leadForm) leadForm.addEventListener('submit', function(e){
   var btn = leadForm.querySelector('button[type=submit]');
   if (btn){ btn.disabled = true; btn.textContent = 'Sending\u2026'; }
   var data = Object.fromEntries(new FormData(leadForm).entries());
+  var qs = new URLSearchParams(location.search);
+  var pick = function(k){ return qs.get(k) || ''; };
   data.source = 'injury.jsminjuryfirm.com/personal-injury-lawyer';
+  data.landing_page = location.origin + location.pathname;
+  data.utm_source = pick('utm_source');
+  data.utm_medium = pick('utm_medium');
+  data.utm_campaign = pick('utm_campaign');
+  data.utm_term = pick('utm_term') || pick('kw');
+  data.utm_content = pick('utm_content');
+  data.gclid = pick('gclid');
+  data.wbraid = pick('wbraid');
+  data.gbraid = pick('gbraid');
+  data.fbclid = pick('fbclid');
+  data.referrer = document.referrer || '';
   window.dataLayer.push({event:'generate_lead', form_location:'personal_injury_lp'});
   function done(){ window.location.href = '/thank-you/'; }
   fetch('/.netlify/functions/lead', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)}).then(done).catch(done);
