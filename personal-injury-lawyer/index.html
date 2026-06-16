@@ -438,7 +438,7 @@ if (leadForm) leadForm.addEventListener('submit', function(e){
   var data = Object.fromEntries(new FormData(leadForm).entries());
   data.source = 'injury.jsminjuryfirm.com/personal-injury-lawyer';
   window.dataLayer.push({event:'generate_lead', form_location:'personal_injury_lp'});
-  function done(){ leadForm.style.display='none'; document.getElementById('thanks').classList.add('show'); }
+  function done(){ window.location.href = '/thank-you/'; }
   fetch('/.netlify/functions/lead', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)}).then(done).catch(done);
 });
 </script>
