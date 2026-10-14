@@ -260,7 +260,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
           <div class="frow">
             <input name="phone" type="tel" placeholder="Phone" autocomplete="tel" required>
-            <input name="email" type="email" placeholder="Email" autocomplete="email" required>
+            <input name="email" type="email" placeholder="Email (optional)" autocomplete="email">
           </div>
           <label class="flabel" for="msg">Tell Us About Your Case</label>
           <textarea id="msg" name="message" placeholder="Type your message here"></textarea>
@@ -540,14 +540,16 @@ var jsmSrc = jsmSrcCapture();
 var leadForm = document.getElementById('leadForm');
 if (leadForm) leadForm.addEventListener('submit', function(e){
   e.preventDefault();
-  /* Validation (Zendesk 13347, 2026-10-14): the form tag carries novalidate, so the browser did not
-     enforce the required fields. Enforce them here, and require a phone number or an email address
-     so GHL can always create the contact. */
+  /* Validation (Zendesk 13347, 2026-10-14, v3): the form tag carries novalidate, so enforce the
+     required fields here. Phone is required (GHL needs it to create the contact); email is optional
+     and only checked for format when filled in. */
   var fld = function(n){ var el = leadForm.querySelector('[name=' + n + ']'); return el ? el.value.trim() : ''; };
+  var em = leadForm.querySelector('[name=email]');
+  if (em) { em.required = false; }
   if (!leadForm.checkValidity()) { leadForm.reportValidity(); return; }
-  if (!fld('phone') && !fld('email')) {
+  if (!fld('phone')) {
     var ph = leadForm.querySelector('[name=phone]');
-    if (ph) { ph.setCustomValidity('Please enter a phone number or an email address.'); leadForm.reportValidity(); ph.setCustomValidity(''); }
+    if (ph) { ph.setCustomValidity('Please enter a phone number.'); leadForm.reportValidity(); ph.setCustomValidity(''); }
     return;
   }
   var btn = leadForm.querySelector('button[type=submit]');
