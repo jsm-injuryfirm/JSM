@@ -540,6 +540,16 @@ var jsmSrc = jsmSrcCapture();
 var leadForm = document.getElementById('leadForm');
 if (leadForm) leadForm.addEventListener('submit', function(e){
   e.preventDefault();
+  /* Validation (Zendesk 13347, 2026-10-14): the form tag carries novalidate, so the browser did not
+     enforce the required fields. Enforce them here, and require a phone number or an email address
+     so GHL can always create the contact. */
+  var fld = function(n){ var el = leadForm.querySelector('[name=' + n + ']'); return el ? el.value.trim() : ''; };
+  if (!leadForm.checkValidity()) { leadForm.reportValidity(); return; }
+  if (!fld('phone') && !fld('email')) {
+    var ph = leadForm.querySelector('[name=phone]');
+    if (ph) { ph.setCustomValidity('Please enter a phone number or an email address.'); leadForm.reportValidity(); ph.setCustomValidity(''); }
+    return;
+  }
   var btn = leadForm.querySelector('button[type=submit]');
   if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
   var data = Object.fromEntries(new FormData(leadForm).entries());
