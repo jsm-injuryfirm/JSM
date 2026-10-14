@@ -462,25 +462,107 @@ window.dataLayer = window.dataLayer || [];
 document.querySelectorAll('[data-call]').forEach(function(a){
   a.addEventListener('click', function(){ window.dataLayer.push({event:'phone_call_click', value:'(949) 404-4826'}); });
 });
+
+/* Lead attribution, same rules as the jsminjuryfirm.com contact form (Zendesk 13347, 2026-10-13).
+   The first known arrival (UTMs, ad click ids, outside referrer) is kept for 30 days in localStorage,
+   so it survives the visitor browsing away and coming back; a visit with nothing to record never overwrites it. */
+var JSM_SRC_KEY = 'jsm_src', JSM_SRC_DAYS = 30;
+function jsmSrcRead(){
+  try {
+    var v = JSON.parse(localStorage.getItem(JSM_SRC_KEY) || 'null');
+    if (v && v.t && (Date.now() - v.t) < JSM_SRC_DAYS * 864e5) return v;
+  } catch(e){}
+  return null;
+}
+function jsmSrcCapture(){
+  var q = new URLSearchParams(location.search), r = '';
+  try { if (document.referrer) { var h = new URL(document.referrer).hostname.toLowerCase().replace(/^www\./,''); if (h && h !== location.hostname.toLowerCase().replace(/^www\./,'')) r = h; } } catch(e){}
+  var ids = ['gclid','gbraid','wbraid','msclkid','fbclid','ttclid','li_fat_id','twclid','rdt_cid','epik','sccid'].filter(function(k){ return q.has(k); });
+  var s = (q.get('utm_source') || '').toLowerCase().slice(0,100), m = (q.get('utm_medium') || '').toLowerCase().slice(0,100);
+  var u = {};
+  ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id','gclid','wbraid','gbraid','fbclid','ttclid'].forEach(function(k){
+    var x = (q.get(k) || (k === 'utm_term' ? q.get('kw') : '') || '').trim().slice(0, /clid$|braid$/.test(k) ? 255 : 100);
+    if (x) u[k] = x;
+  });
+  var known = !!(r || s || m || ids.length), cur = jsmSrcRead();
+  if (cur && (cur.k || !known)) return cur;
+  var v = {ref:r, src:s, med:m, ids:ids, u:u, k:known?1:0, t:Date.now()};
+  try { localStorage.setItem(JSM_SRC_KEY, JSON.stringify(v)); } catch(e){}
+  return v;
+}
+/* Port of jsm_source_classify() from the main site (wp-content/themes/pql14/inc/jsm-source-attribution.php),
+   plus Meta's placement codes (fb, ig, msg, an, th) that Meta ads put in utm_source. Returns ['', ''] when unknown. */
+function jsmSourceClassify(t){
+  var ref = (t.ref||'').toLowerCase(), src = (t.src||'').trim().toLowerCase(), med = (t.med||'').trim().toLowerCase();
+  var ids = (t.ids||[]).map(function(x){ return String(x).toLowerCase(); });
+  var paid = /^(cpc|ppc|paid|paid[-_ ]?(social|search|media)|cpm|cpv|display|ads?)$/.test(med), none = ['',''];
+  var host = function(ps){ return ps.some(function(p){ return new RegExp('(^|\\.)' + p + '$').test(ref); }); };
+  var srcis = function(ns){ return ns.indexOf(src) !== -1; };
+  var has = function(l){ return l.some(function(x){ return ids.indexOf(x) !== -1; }); };
+  if (has(['gclid','gbraid','wbraid']) || (paid && srcis(['google','google ads','googleads','adwords']))) return ['Google Ads','Paid - Webform'];
+  if (has(['msclkid']) || (paid && srcis(['bing','microsoft','yahoo','duckduckgo']))) return none;
+  var social = [
+    ['Facebook', ['facebook','fb','meta','msg','an','th'], ['facebook\\.com','fb\\.com','fb\\.me'], []],
+    ['Instagram', ['instagram','ig'], ['instagram\\.com'], []],
+    ['LinkedIn', ['linkedin','li'], ['linkedin\\.com','lnkd\\.in'], ['li_fat_id']],
+    ['Nextdoor', ['nextdoor'], ['nextdoor\\.com'], []],
+    ['Reddit', ['reddit'], ['reddit\\.com'], []],
+    ['TikTok', ['tiktok'], ['tiktok\\.com'], ['ttclid']],
+    ['YouTube', ['youtube','yt'], ['youtube\\.com','youtu\\.be'], []]
+  ];
+  for (var i = 0; i < social.length; i++) { if (has(social[i][3]) || (paid && srcis(social[i][1]))) return [social[i][0], 'Paid - Webform']; }
+  // A Meta ad click id with a paid medium but no recognised source is still a Meta ad.
+  if (paid && has(['fbclid'])) return ['Facebook', 'Paid - Webform'];
+  var otherSocial = ['twitter\\.com','x\\.com','t\\.co','pinterest\\.com','snapchat\\.com','threads\\.net','threads\\.com','tumblr\\.com','quora\\.com'];
+  if (paid && srcis(['twitter','x','pinterest','snapchat','threads','quora'])) return ['Social Media - Other', 'Paid - Webform'];
+  if (paid && srcis(['chatgpt','chatgpt.com','openai'])) return ['AI', 'ChatGPT Paid - Webform'];
+  var ai = [
+    ['ChatGPT Organic - Webform', ['chatgpt\\.com','chat\\.openai\\.com','openai\\.com'], ['chatgpt','chatgpt.com','openai']],
+    ['Claude Organic - Webform', ['claude\\.ai'], ['claude','claude.ai']],
+    ['Gemini Organic - Webform', ['gemini\\.google\\.com','bard\\.google\\.com'], ['gemini','gemini.google.com']],
+    ['Grok Organic - Webform', ['grok\\.com','x\\.ai'], ['grok','grok.com']],
+    ['Other AI Organic - Webform', ['perplexity\\.ai','copilot\\.microsoft\\.com','meta\\.ai','you\\.com','phind\\.com','poe\\.com','chat\\.mistral\\.ai','deepseek\\.com','chat\\.deepseek\\.com'], ['perplexity','perplexity.ai','copilot','meta.ai','deepseek']]
+  ];
+  if (paid) return none;
+  for (var j = 0; j < ai.length; j++) { if (host(ai[j][1]) || srcis(ai[j][2])) return ['AI', ai[j][0]]; }
+  for (var k = 0; k < social.length; k++) { if (host(social[k][2]) || srcis(social[k][1])) return [social[k][0], 'Organic - Webform']; }
+  if (host(otherSocial)) return ['Social Media - Other', 'Organic - Webform'];
+  if (/(^|\.)google\.[a-z.]+$/.test(ref) && !/^(mail|docs|drive|gemini|bard)\./.test(ref)) return ['Google Organic', 'Organic - Webform'];
+  if (ref === '' && srcis(['google','gbp','google business profile','googlemybusiness','gmb'])) return ['Google Organic', 'Organic - Webform'];
+  if (host(['bing\\.com']) || (ref === '' && srcis(['bing']))) return ['Bing Organic', 'Webform'];
+  if (host(['duckduckgo\\.com']) || (ref === '' && srcis(['duckduckgo']))) return ['DuckDuckGo Organic', 'Webform'];
+  if (host(['yahoo\\.com','search\\.yahoo\\.com']) || (ref === '' && srcis(['yahoo']))) return ['Yahoo Organic', 'Webform'];
+  if (ref === '' && src === '' && med === '' && !ids.length) return ['Direct', 'Webform'];
+  return none;
+}
+var jsmSrc = jsmSrcCapture();
+
 var leadForm = document.getElementById('leadForm');
 if (leadForm) leadForm.addEventListener('submit', function(e){
   e.preventDefault();
   var btn = leadForm.querySelector('button[type=submit]');
-  if (btn){ btn.disabled = true; btn.textContent = 'Sending\u2026'; }
+  if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
   var data = Object.fromEntries(new FormData(leadForm).entries());
-  var qs = new URLSearchParams(location.search);
-  var pick = function(k){ return qs.get(k) || ''; };
+  var cb = leadForm.querySelector('input[name=sms_consent]');
+  data.sms_consent = (cb && cb.checked) ? 'true' : 'false';
+  var a = jsmSrc || jsmSrcRead() || {u:{}}, u = a.u || {};
+  var pick = function(k){ return u[k] || ''; };
+  var cls = jsmSourceClassify(a);
+  data.source_type = cls[0];
+  data.source_detail = cls[1];
   data.source = 'injury.jsminjuryfirm.com/personal-injury-lawyer';
   data.landing_page = location.origin + location.pathname;
   data.utm_source = pick('utm_source');
   data.utm_medium = pick('utm_medium');
   data.utm_campaign = pick('utm_campaign');
-  data.utm_term = pick('utm_term') || pick('kw');
+  data.utm_term = pick('utm_term');
   data.utm_content = pick('utm_content');
+  data.utm_id = pick('utm_id');
   data.gclid = pick('gclid');
   data.wbraid = pick('wbraid');
   data.gbraid = pick('gbraid');
   data.fbclid = pick('fbclid');
+  data.ttclid = pick('ttclid');
   data.referrer = document.referrer || '';
   window.dataLayer.push({event:'generate_lead', form_location:'personal_injury_lp'});
   function done(){ window.location.href = '/thank-you/'; }
